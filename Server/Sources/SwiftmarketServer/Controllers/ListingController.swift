@@ -60,20 +60,50 @@ struct ListingController: RouteCollection {
         guard page > 0 else {
             throw Abort(.badRequest, reason: "Page must be greater than 0")
         }
+        let requestedCategory = req.query[String.self, at: "category"]?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        let requestedQuery = req.query[String.self, at: "query"]?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .lowercased()
         
         let pageSize = 20
         let offset = (page - 1) * pageSize
-        
-        let totalCount = try await Listing.query(on: req.db).count()
-        let totalPages = (totalCount + pageSize - 1) / pageSize
-        
-        let listings = try await Listing.query(on: req.db)
+
+        let allListings = try await Listing.query(on: req.db)
             .with(\.$seller)
-            .offset(offset)
-            .limit(pageSize)
             .all()
 
-        let items = try listings.map { listing in
+        let filteredListings = allListings.filter { listing in
+            let matchesCategory: Bool
+            if let requestedCategory, !requestedCategory.isEmpty {
+                matchesCategory = listing.category.lowercased() == requestedCategory.lowercased()
+            } else {
+                matchesCategory = true
+            }
+
+            let matchesQuery: Bool
+            if let requestedQuery, !requestedQuery.isEmpty {
+                let title = listing.title.lowercased()
+                let description = listing.description.lowercased()
+                matchesQuery = title.contains(requestedQuery) || description.contains(requestedQuery)
+            } else {
+                matchesQuery = true
+            }
+
+            return matchesCategory && matchesQuery
+        }
+
+        let totalCount = filteredListings.count
+        let totalPages = (totalCount + pageSize - 1) / pageSize
+
+        let pageListings: ArraySlice<Listing>
+        if offset >= totalCount {
+            pageListings = []
+        } else {
+            pageListings = filteredListings[offset..<min(offset + pageSize, totalCount)]
+        }
+
+        let items = try pageListings.map { listing in
             return try ListingResponse(listing: listing, seller: listing.seller)
         }
         
