@@ -1,0 +1,24 @@
+{
+    "configurations": [
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:swiftmarket-server}",
+            "name": "Debug SwiftmarketServer",
+            "target": "SwiftmarketServer",
+            "configuration": "debug",
+            "preLaunchTask": "swift: Build Debug SwiftmarketServer"
+        },
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:swiftmarket-server}",
+            "name": "Release SwiftmarketServer",
+            "target": "SwiftmarketServer",
+            "configuration": "release",
+            "preLaunchTask": "swift: Build Release SwiftmarketServer"
+        }
+    ]
+}
