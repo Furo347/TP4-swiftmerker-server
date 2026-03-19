@@ -4,7 +4,7 @@ struct UserResponse: Codable {
     var id: UUID
     var username: String
     var email: String
-    var createdAt: Date
+    var createdAt: Date?
 }
 
 struct CreateUserRequest: Codable { 
@@ -18,8 +18,8 @@ struct ListingResponse: Codable {
     var description: String
     var price: Double
     var category: String
-    var sellerID: UUID
-    var createdAt: Date
+    var seller: UserResponse
+    var createdAt: Date?
 }
 
 struct CreateListingRequest: Codable { 

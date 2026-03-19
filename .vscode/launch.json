@@ -1,0 +1,44 @@
+{
+    "configurations": [
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:swiftmarket-server}/Server",
+            "name": "Debug SwiftmarketServer (Server)",
+            "target": "SwiftmarketServer",
+            "configuration": "debug",
+            "preLaunchTask": "swift: Build Debug SwiftmarketServer (Server)"
+        },
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:swiftmarket-server}/Server",
+            "name": "Release SwiftmarketServer (Server)",
+            "target": "SwiftmarketServer",
+            "configuration": "release",
+            "preLaunchTask": "swift: Build Release SwiftmarketServer (Server)"
+        },
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:swiftmarket-server}/Client",
+            "name": "Debug SwiftMarketClient (Client)",
+            "target": "SwiftMarketClient",
+            "configuration": "debug",
+            "preLaunchTask": "swift: Build Debug SwiftMarketClient (Client)"
+        },
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:swiftmarket-server}/Client",
+            "name": "Release SwiftMarketClient (Client)",
+            "target": "SwiftMarketClient",
+            "configuration": "release",
+            "preLaunchTask": "swift: Build Release SwiftMarketClient (Client)"
+        }
+    ]
+}

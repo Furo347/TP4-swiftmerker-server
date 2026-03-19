@@ -14,7 +14,7 @@ struct CreateUserCommand: AsyncParsableCommand {
 		let api = APIClient()
 		do {
 			let result = try await api.createUser(CreateUserRequest(username: username, email: email))
-			printUser(result)
+			printUserCreated(result)
 		} catch {
 			handleAPIError(error)
 			throw ExitCode.failure
@@ -33,7 +33,7 @@ struct UsersCommand: AsyncParsableCommand {
 				print("No users found.")
 				return
 			}
-			result.forEach(printUser)
+			printUsersTable(result)
 		} catch {
 			handleAPIError(error)
 			throw ExitCode.failure
@@ -54,7 +54,7 @@ struct UserCommand: AsyncParsableCommand {
 				throw APIError.validationFailed("Invalid UUID for user id")
 			}
 			let result = try await api.getUser(id: userID)
-			printUser(result)
+			printUserDetails(result)
 		} catch {
 			handleAPIError(error)
 			throw ExitCode.failure
@@ -76,10 +76,11 @@ struct UserListingsCommand: AsyncParsableCommand {
 			}
 			let result = try await api.getUserListings(userID: parsedUserID)
 			if result.isEmpty {
-				print("No listings found for this user.")
+				print("No listings found.")
 				return
 			}
-			result.forEach(printListing)
+			let ownerName = result.first?.seller.username ?? "user"
+			printUserListings(ownerName, result)
 		} catch {
 			handleAPIError(error)
 			throw ExitCode.failure

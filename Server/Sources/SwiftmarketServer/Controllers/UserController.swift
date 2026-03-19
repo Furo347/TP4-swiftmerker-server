@@ -6,7 +6,9 @@ struct UserController: RouteCollection {
     func boot(routes: any RoutesBuilder) throws {
         let users = routes.grouped("users")
         users.post(use: create)
+        users.get(use: getAll)
         users.get(":userID", use: get)
+        users.get(":userID", "listings", use: getListings)
     }
 
     func create(req: Request) async throws -> Response {

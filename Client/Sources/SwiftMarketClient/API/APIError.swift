@@ -13,17 +13,17 @@ extension APIError {
     var message: String {
         switch self {
         case .notFound(let message):
-            return "Not found: \(message)"
+            return "Error: \(message)"
         case .conflict(let message):
-            return "Conflict: \(message)"
+            return "Error: \(message)"
         case .validationFailed(let message):
-            return "Validation failed: \(message)"
+            return "Error: Validation failed.\n\(message)"
         case .serverError(let message):
-            return "Server error: \(message)"
+            return "Error: \(message)"
         case .connectionFailed:
             return "Error: Could not connect to server at http://localhost:8080.\nMake sure the server is running: swift run in swiftmarket-server/"
         case .decodingError(let error):
-            return "Decoding error: \(error.localizedDescription)"
+            return "Error: Failed to decode server response (\(error.localizedDescription))."
         }
     }
 }

@@ -17,12 +17,15 @@ struct ListingsCommand: AsyncParsableCommand {
 		let api = APIClient()
 		do {
 			let result = try await api.getListings(page: page, category: category, query: query)
-			print("Page \(result.page)/\(result.totalPages) - total \(result.totalCount)")
 			if result.items.isEmpty {
 				print("No listings found.")
 				return
 			}
-			result.items.forEach(printListing)
+			if category != nil || query != nil {
+				printFilteredListings(result.items)
+			} else {
+				printListingsPage(result)
+			}
 		} catch {
 			handleAPIError(error)
 			throw ExitCode.failure
@@ -43,7 +46,7 @@ struct ListingCommand: AsyncParsableCommand {
 				throw APIError.validationFailed("Invalid UUID for listing id")
 			}
 			let result = try await api.getListing(id: listingID)
-			printListing(result)
+			printListingDetails(result)
 		} catch {
 			handleAPIError(error)
 			throw ExitCode.failure
@@ -57,7 +60,7 @@ struct PostCommand: AsyncParsableCommand {
 	@Option(name: .long)
 	var title: String
 
-	@Option(name: .long)
+	@Option(name: .customLong("desc"))
 	var description: String
 
 	@Option(name: .long)
@@ -66,7 +69,7 @@ struct PostCommand: AsyncParsableCommand {
 	@Option(name: .long)
 	var category: String
 
-	@Option(name: .long, help: "Seller UUID")
+	@Option(name: .customLong("seller"), help: "Seller UUID")
 	var sellerID: String
 
 	func run() async throws {
@@ -84,7 +87,7 @@ struct PostCommand: AsyncParsableCommand {
 				sellerID: parsedSellerID
 			)
 			let result = try await api.createListing(payload)
-			printListing(result)
+			printListingCreated(result)
 		} catch {
 			handleAPIError(error)
 			throw ExitCode.failure
@@ -104,8 +107,9 @@ struct DeleteCommand: AsyncParsableCommand {
 			guard let listingID = UUID(uuidString: id) else {
 				throw APIError.validationFailed("Invalid UUID for listing id")
 			}
+			let listing = try await api.getListing(id: listingID)
 			try await api.deleteListing(id: listingID)
-			print("Listing deleted.")
+			print("Listing \"\(listing.title)\" deleted.")
 		} catch {
 			handleAPIError(error)
 			throw ExitCode.failure
