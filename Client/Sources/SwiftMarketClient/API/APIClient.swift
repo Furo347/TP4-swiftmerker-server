@@ -60,8 +60,12 @@ struct APIClient {
 
     func deleteListing(id: UUID) async throws {
         let request = try makeRequest(path: "listings/\(id.uuidString)", method: "DELETE")
-        let (_, response) = try await session.data(for: request)
-        try validate(response: response)
+        do {
+            let (data, response) = try await session.data(for: request)
+            try validate(response: response, data: data)
+        } catch {
+            throw mapError(error)
+        }
     }
 
     private func get<T: Decodable>(
@@ -69,9 +73,13 @@ struct APIClient {
         queryItems: [URLQueryItem] = []
     ) async throws -> T {
         let request = try makeRequest(path: path, method: "GET", queryItems: queryItems)
-        let (data, response) = try await session.data(for: request)
-        try validate(response: response, data: data)
-        return try decoder.decode(T.self, from: data)
+        do {
+            let (data, response) = try await session.data(for: request)
+            try validate(response: response, data: data)
+            return try decoder.decode(T.self, from: data)
+        } catch {
+            throw mapError(error)
+        }
     }
 
     private func post<B: Encodable, T: Decodable>(
@@ -82,9 +90,13 @@ struct APIClient {
         request.httpBody = try encoder.encode(body)
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
 
-        let (data, response) = try await session.data(for: request)
-        try validate(response: response, data: data)
-        return try decoder.decode(T.self, from: data)
+        do {
+            let (data, response) = try await session.data(for: request)
+            try validate(response: response, data: data)
+            return try decoder.decode(T.self, from: data)
+        } catch {
+            throw mapError(error)
+        }
     }
 
     private func makeRequest(
@@ -110,17 +122,55 @@ struct APIClient {
 
     private func validate(response: URLResponse, data: Data = Data()) throws {
         guard let http = response as? HTTPURLResponse else {
-            throw URLError(.badServerResponse)
+            throw APIError.serverError("Invalid server response")
         }
 
         guard (200...299).contains(http.statusCode) else {
-            throw NSError(
-                domain: "APIClient",
-                code: http.statusCode,
-                userInfo: [
-                    NSLocalizedDescriptionKey: String(data: data, encoding: .utf8) ?? "HTTP \(http.statusCode)"
-                ]
-            )
+            let reason = decodeServerReason(from: data) ?? "HTTP \(http.statusCode)"
+            switch http.statusCode {
+            case 404:
+                throw APIError.notFound(reason)
+            case 409:
+                throw APIError.conflict(reason)
+            case 422:
+                throw APIError.validationFailed(reason)
+            default:
+                throw APIError.serverError(reason)
+            }
         }
+    }
+
+    private func decodeServerReason(from data: Data) -> String? {
+        guard !data.isEmpty else { return nil }
+        if let serverError = try? decoder.decode(ServerError.self, from: data),
+           let reason = serverError.reason,
+           !reason.isEmpty {
+            return reason
+        }
+        if let raw = String(data: data, encoding: .utf8), !raw.isEmpty {
+            return raw
+        }
+        return nil
+    }
+
+    private func mapError(_ error: Error) -> APIError {
+        if let apiError = error as? APIError {
+            return apiError
+        }
+
+        if error is DecodingError {
+            return .decodingError(error)
+        }
+
+        if let urlError = error as? URLError {
+            switch urlError.code {
+            case .cannotFindHost, .cannotConnectToHost, .networkConnectionLost, .notConnectedToInternet, .timedOut:
+                return .connectionFailed
+            default:
+                return .serverError(urlError.localizedDescription)
+            }
+        }
+
+        return .serverError(error.localizedDescription)
     }
 }
